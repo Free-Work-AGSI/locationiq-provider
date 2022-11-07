@@ -77,6 +77,7 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
 
         $content = $this->executeQuery($url, $query->getLocale());
         $places = json_decode($content, true);
+        $places = $this->filterPlaces($places);
 
         $results = [];
         foreach ($places as $place) {
@@ -84,6 +85,20 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
         }
 
         return new AddressCollection($results);
+    }
+
+    private function filterPlaces(array $places): array
+    {
+        foreach ($places as $key => $place) {
+            if ($place['class'] === 'place' && $place['type'] === 'suburb') {
+                //La défense
+                if ('La Défense' !== $place['address']['name'] ?? null && '92400' !==  $place['address']['postcode'] ?? null) {
+                    unset($places[$key]);
+                }
+            }
+        }
+
+        return $places;
     }
 
     /**
@@ -227,6 +242,17 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
             }
         } else if ($arrayResult['class'] === 'landuse' && $arrayResult['type'] === 'commercial') {
             //Landuse Commercial (technopole)
+            $builder->setLocality($arrayResult['address']['name']);
+            $adminLevel1 = $arrayResult['address']['state'] ?? null;
+            if (null !== $adminLevel1) {
+                $builder->addAdminLevel(1, $adminLevel1);
+                $adminLevel2 = $arrayResult['address']['county'] ?? null;
+                if (null !== $adminLevel2) {
+                    $builder->addAdminLevel(2, $adminLevel2);
+                }
+            }
+        } else if ($arrayResult['class'] === 'place' && $arrayResult['type'] === 'suburb') {
+            //suburb
             $builder->setLocality($arrayResult['address']['name']);
             $adminLevel1 = $arrayResult['address']['state'] ?? null;
             if (null !== $adminLevel1) {
