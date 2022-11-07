@@ -80,7 +80,6 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
         $places = $this->filterPlaces($places);
 
         $results = [];
-
         foreach ($places as $place) {
             $results[] = $this->resultToArray($place);
         }
