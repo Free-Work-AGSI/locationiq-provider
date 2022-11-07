@@ -77,13 +77,29 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
 
         $content = $this->executeQuery($url, $query->getLocale());
         $places = json_decode($content, true);
+        $places = $this->filterPlaces($places);
 
         $results = [];
+
         foreach ($places as $place) {
             $results[] = $this->resultToArray($place);
         }
 
         return new AddressCollection($results);
+    }
+
+    private function filterPlaces(array $places): array
+    {
+        foreach ($places as $key => $place) {
+            if ($place['class'] === 'place' && $place['type'] === 'suburb') {
+                //La défense
+                if ('La Défense' !== $place['address']['name'] ?? null && '92400' !==  $place['address']['postcode'] ?? null) {
+                    unset($places[$key]);
+                }
+            }
+        }
+
+        return $places;
     }
 
     /**
